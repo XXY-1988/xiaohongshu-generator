@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小红书爆款笔记生成器</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f5f5f5;
+  --card: #ffffff;
+  --text: #1a1a1a;
+  --text-secondary: #666;
+  --accent: #ff2442;
+  --accent-hover: #e0203a;
+  --border: #e8e8e8;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.header {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.header-brand {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-brand .icon { font-size: 24px; }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-badge {
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.free-count {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  background: #f0f0f0;
+  border-radius: 12px;
+}
+
+.layout {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  padding: 24px;
+}
+
+.card-header {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-group { margin-bottom: 14px; }
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fafafa;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255,36,66,0.1);
+  background: #fff;
+}
+
+.form-group textarea { resize: vertical; min-height: 70px; }
+
+.form-inline {
+  display: flex;
+  gap: 8px;
+}
+
+.form-inline input { flex: 1; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  width: 100%;
+}
+
+.btn-primary:hover { background: var(--accent-hover); }
+
+.btn-primary:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.btn-outline:hover { background: #fff0f3; }
+
+.btn-small {
+  padding: 5px 12px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+.btn-copy {
+  background: #f0f0f0;
+  color: #444;
+  border: 1px solid #ddd;
+  padding: 4px 12px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.btn-copy:hover { background: #e0e0e0; }
+
+.btn-copy.copied { background: #d4edda; border-color: #c3e6cb; color: #155724; }
+
+/* Settings */
+.settings-toggle {
+  cursor: pointer;
+  font-size: 20px;
+  color: #999;
+  transition: color 0.15s;
+}
+
+.settings-toggle:hover { color: var(--text); }
+
+.settings-panel {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 360px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  padding: 20px;
+  z-index: 20;
+  margin-top: 8px;
+}
+
+.settings-panel.show { display: block; }
+
+.settings-panel h3 {
+  font-size: 14px;
+  margin-bottom: 14px;
+  color: var(--text);
+}
+
+.settings-panel .form-group { margin-bottom: 12px; }
+
+.settings-panel .hint {
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+}
+
+.settings-saved {
+  color: #2ecc71;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.settings-saved.visible { opacity: 1; }
+
+/* Paywall */
+.paywall {
+  display: none;
+  text-align: center;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #fff5f5, #fff0f3);
+  border-radius: var(--radius);
+  border: 2px solid #ffcdd2;
+}
+
+.paywall.show { display: block; }
+
+.paywall .icon { font-size: 48px; margin-bottom: 12px; }
+
+.paywall h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+  color: var(--accent);
+}
+
+.paywall p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.paywall .price {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.paywall .price-sub {
+  font-size: 13px;
+  color: #999;
+  margin-bottom: 16px;
+}
+
+/* Output area */
+.output-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #bbb;
+}
+
+.output-empty .icon { font-size: 48px; margin-bottom: 12px; }
+
+.result-section {
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #fafafa;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.result-body {
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.title-options { display: flex; flex-direction: column; gap: 8px; }
+
+.title-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #fffbf0;
+  border-radius: 6px;
+  border: 1px solid #f0e6c0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.title-number {
+  background: var(--accent);
+  color: #fff;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.hashtag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hashtag {
+  background: #fff0f3;
+  color: var(--accent);
+  padding: 4px 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.cover-idea {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  background: #f8f8ff;
+  border-radius: 6px;
+  border: 1px solid #e0e0f0;
+}
+
+.cover-idea .emoji { font-size: 32px; flex-shrink: 0; }
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px;
+  color: var(--text-secondary);
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.stats-bar {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.stat .value { font-weight: 600; color: var(--text); }
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 100;
+  animation: toastIn 0.3s ease;
+}
+
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+.mode-toggle {
+  display: flex;
+  background: #f0f0f0;
+  border-radius: 6px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.mode-btn {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  background: transparent;
+  color: #666;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.mode-btn.active {
+  background: #fff;
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.mode-btn.has-api {
+  position: relative;
+}
+
+.mode-btn.has-api::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  background: #2ecc71;
+  border-radius: 50%;
+}
+
+.error-banner {
+  background: #fff5f5;
+  border: 1px solid #ffcdd2;
+  color: #c0392b;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-brand">
+    <span class="icon">📕</span>
+    小红书爆款笔记生成器
+  </div>
+  <div class="header-right">
+    <div class="mode-toggle" id="modeToggle">
+      <button class="mode-btn active" data-mode="smart">智能模板</button>
+      <button class="mode-btn" data-mode="ai" id="aiModeBtn">AI 增强</button>
+    </div>
+    <span class="free-count" id="freeCount">免费剩余：3次</span>
+    <span class="header-badge">v2.0</span>
+    <div style="position:relative;">
+      <span class="settings-toggle" id="settingsToggle" title="API 设置">⚙️</span>
+      <div class="settings-panel" id="settingsPanel">
+        <h3>⚙️ API 设置</h3>
+        <div class="form-group">
+          <label>API Base URL</label>
+          <input type="text" id="apiBase" placeholder="https://api.openai.com/v1">
+          <div class="hint">支持 OpenAI 兼容接口（如 DeepSeek、通义千问等）</div>
+        </div>
+        <div class="form-group">
+          <label>API Key</label>
+          <div class="form-inline">
+            <input type="password" id="apiKey" placeholder="sk-...">
+            <button class="btn btn-outline btn-small" onclick="toggleApiKeyVisibility()" id="toggleKeyBtn" title="显示/隐藏">👁️</button>
+          </div>
+          <div class="hint">密钥仅保存在你浏览器本地，不会上传</div>
+        </div>
+        <div class="form-group">
+          <label>模型名称</label>
+          <input type="text" id="apiModel" placeholder="gpt-4o-mini">
+          <div class="hint">推荐 deepseek-chat（便宜好用）、gpt-4o-mini</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
+          <button class="btn btn-primary btn-small" onclick="saveSettings()">💾 保存设置</button>
+          <span class="settings-saved" id="settingsSaved">✅ 已保存</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- Input Panel -->
+  <div class="card" id="inputPanel">
+    <div class="card-header">✏️ 输入信息</div>
+
+    <div class="form-group">
+      <label>话题 / 产品名称 *</label>
+      <input type="text" id="topic" placeholder="例如：早C晚A护肤、某款咖啡机、杭州小众咖啡馆...">
+    </div>
+
+    <div class="form-group">
+      <label>笔记类型</label>
+      <select id="noteType">
+        <option value="种草">🛍️ 种草推荐</option>
+        <option value="测评">📊 真实测评</option>
+        <option value="教程">📖 教程攻略</option>
+        <option value="探店">📍 探店打卡</option>
+        <option value="vlog">🎬 生活 Vlog</option>
+        <option value="好物">✨ 好物分享</option>
+        <option value="避雷">⚠️ 避雷指南</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>核心卖点 / 关键词（逗号分隔）</label>
+      <input type="text" id="keywords" placeholder="例如：性价比高,适合新手,成分温和,颜值在线">
+    </div>
+
+    <div class="form-group">
+      <label>额外要求（可选）</label>
+      <textarea id="extra" placeholder="例如：语气要活泼可爱、面向大学生群体、强调使用前后的对比..." rows="3"></textarea>
+    </div>
+
+    <div id="errorBanner" class="error-banner" style="display:none;"></div>
+
+    <button class="btn btn-primary" id="generateBtn" onclick="generate()">
+      ⚡ 生成爆款笔记
+    </button>
+
+    <div class="stats-bar" style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+      <div class="stat">💰 <span class="value" id="statCost">¥0.00</span> 本次成本</div>
+      <div class="stat">⚡ <span class="value" id="statTime">0s</span> 生成耗时</div>
+      <div class="stat" id="statMode" style="display:none;">🔧 <span class="value" id="statModeLabel"></span></div>
+    </div>
+  </div>
+
+  <!-- Output Panel -->
+  <div class="card" id="outputPanel">
+    <div class="card-header" style="justify-content:space-between;">
+      <span>📝 生成结果</span>
+      <button class="btn btn-copy" onclick="copyAll()">📋 一键复制全文</button>
+    </div>
+
+    <!-- Paywall -->
+    <div class="paywall" id="paywall">
+      <div class="icon">🔒</div>
+      <h3>免费试用次数已用完</h3>
+      <p>继续使用 AI 增强模式需要解锁</p>
+      <div class="price">¥29</div>
+      <div class="price-sub">永久使用 · 无限生成</div>
+      <button class="btn btn-primary" style="max-width:200px;margin:0 auto 12px;" onclick="showPayQR()">
+        💳 立即解锁
+      </button>
+      <div id="payQR" style="display:none;margin-top:12px;">
+        <p style="font-size:13px;color:#999;margin-bottom:8px;">扫一扫付款，备注"小红书生成器"</p>
+        <div style="width:160px;height:160px;background:#f0f0f0;border-radius:8px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:13px;">
+          收款码<br>（请替换为真实）</div>
+        <p style="font-size:12px;color:#999;">付款后联系客服手动激活</p>
+      </div>
+      <p style="font-size:12px;color:#ccc;">或者继续使用 <a href="#" onclick="switchToSmart();return false;" style="color:var(--accent);">智能模板模式</a>（永久免费）</p>
+    </div>
+
+    <div id="output">
+      <div class="output-empty">
+        <div class="icon">📝</div>
+        <div>输入话题，点击生成，秒出爆款笔记</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
